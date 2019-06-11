@@ -132,7 +132,6 @@ const screenShot = {
                   context.fillText(text, textXCoordinate, textYCoordinate);
               }
 
-              console.log('Get Image Data');
               imageData = context.getImageData(0, 0, gifWidth, gifHeight);
 
               ag.addFrameImageData(imageData);
@@ -143,17 +142,11 @@ const screenShot = {
               progressCallback((numFrames - pendingFrames) / numFrames);
 
               if (framesLeft > 0) {
-                  console.log('Video CurrentTime', videoElement.currentTime);
-                  console.log('Capture Single Frame. Interval:', interval);
-                  console.log('FramesLeft', framesLeft);
-
                   videoElement.currentTime = lastCurrentTime + interval;
                   lastCurrentTime = lastCurrentTime + interval;
-                  // utils.requestTimeout(captureSingleFrame, 50); // 50ms enough to seek.
               }
 
               if (pendingFrames === 0) {
-                  console.log('Doing getBase64GIF');
                   videoElement.pause();
 
                   ag.getBase64GIF((image) => {
@@ -179,19 +172,18 @@ const screenShot = {
       canvas.width = gifWidth;
       canvas.height = gifHeight;
       context = canvas.getContext('2d');
-      videoElement.onseeked = () => {
-          console.log('video seeked', videoElement.currentTime);
-          captureFrames();
-      };
+      videoElement.onseeked = captureFrames;
 
       let firstTime = true;
       videoElement.onloadeddata = () => {
-          console.log('Video Can Play');
-          if (firstTime) {
-              captureFrames();
-              firstTime = false;
-          }
+          if (!firstTime) return;
+
+          captureFrames();
+          firstTime = false;
       };
+
+      // Seek for the first time to trigger the onSeeked event.
+      videoElement.currentTime = 0;
     },
     getCropDimensions: (obj = {}) => {
         const width = obj.videoWidth;
