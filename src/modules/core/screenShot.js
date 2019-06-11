@@ -9,7 +9,7 @@
 
 // Dependencies
 import utils from './utils';
-import GIFter from './GIFter/GIFter';
+import AnimatedGIF from './AnimatedGIF';
 
 // Helpers
 const noop = () => {};
@@ -55,20 +55,7 @@ const screenShot = {
         let renderingContextsToSave = [];
         let numFrames = savedRenderingContexts.length ? savedRenderingContexts.length : options.numFrames;
         let pendingFrames = numFrames;
-
-        console.log('new gifter');
-
-        let ag = new GIFter({
-            sampleInt: options.sampleInterval,
-            sampleQty: numFrames,
-            loop: 0,
-            frameDelay: options.frameDuration,
-//				loopDelay: 30,
-            diffMode: 1,
-            quantOpts: {
-                method: 1,
-            }
-        });
+        let ag = new AnimatedGIF(options);
         let fontSize = utils.getFontSize(options);
         let textXCoordinate = options.textXCoordinate ? options.textXCoordinate : textAlign === 'left' ? 1 : textAlign === 'right' ? gifWidth : gifWidth / 2;
         let textYCoordinate = options.textYCoordinate ? options.textYCoordinate : textBaseline === 'top' ? 1 : textBaseline === 'center' ? gifHeight / 2 : gifHeight;
@@ -146,11 +133,9 @@ const screenShot = {
               }
 
               console.log('Get Image Data');
-              createImageBitmap(context.getImageData(0, 0, gifWidth, gifHeight)).then((img) =>{
-                  ag.addFrame(img);
-              });
+              imageData = context.getImageData(0, 0, gifWidth, gifHeight);
 
-              // ag.addFrame(imageData);
+              ag.addFrameImageData(imageData);
 
               pendingFrames = framesLeft;
 
@@ -171,18 +156,18 @@ const screenShot = {
                   console.log('Doing getBase64GIF');
                   videoElement.pause();
 
-                  console.log('Render GIFter');
-                  const image = ag.render();
-                  callback({
-                      'error': false,
-                      'errorCode': '',
-                      'errorMsg': '',
-                      'image': image,
-                      'cameraStream': cameraStream,
-                      'videoElement': videoElement,
-                      'webcamVideoElement': webcamVideoElement,
-                      'savedRenderingContexts': renderingContextsToSave,
-                      'keepCameraOn': keepCameraOn
+                  ag.getBase64GIF((image) => {
+                      callback({
+                        'error': false,
+                        'errorCode': '',
+                        'errorMsg': '',
+                        'image': image,
+                        'cameraStream': cameraStream,
+                        'videoElement': videoElement,
+                        'webcamVideoElement': webcamVideoElement,
+                        'savedRenderingContexts': renderingContextsToSave,
+                        'keepCameraOn': keepCameraOn
+                      });
                   });
               }
           }
