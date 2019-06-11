@@ -227,7 +227,7 @@ AnimatedGIF.prototype = {
       const width = options.gifWidth;
       const gifWriter = new GifWriter(buffer, width, height, gifOptions);
       const onRenderProgressCallback = this.onRenderProgressCallback;
-      const delay = hasExistingImages ? interval * 100 : 0;
+      const delay = frameDuration * 10;
       let bufferToString;
       let gif;
 
@@ -238,12 +238,10 @@ AnimatedGIF.prototype = {
 
           onRenderProgressCallback(0.75 + 0.25 * frame.position * 1.0 / frames.length);
 
-          for (let i = 0; i < frameDuration; i ++) {
-              gifWriter.addFrame(0, 0, width, height, frame.pixels, {
-                  palette: framePalette,
-                  delay: delay
-              });
-          }
+          gifWriter.addFrame(0, 0, width, height, frame.pixels, {
+              palette: framePalette,
+              delay: delay
+          });
       });
 
       gifWriter.end();

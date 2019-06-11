@@ -1753,7 +1753,7 @@ AnimatedGIF.prototype = {
         var width = options.gifWidth;
         var gifWriter$$1 = new gifWriter(buffer, width, height, gifOptions);
         var onRenderProgressCallback = this.onRenderProgressCallback;
-        var delay = hasExistingImages ? interval * 100 : 0;
+        var delay = frameDuration * 10;
         var bufferToString = void 0;
         var gif = void 0;
 
@@ -1764,12 +1764,10 @@ AnimatedGIF.prototype = {
 
             onRenderProgressCallback(0.75 + 0.25 * frame.position * 1.0 / frames.length);
 
-            for (var i = 0; i < frameDuration; i++) {
-                gifWriter$$1.addFrame(0, 0, width, height, frame.pixels, {
-                    palette: framePalette,
-                    delay: delay
-                });
-            }
+            gifWriter$$1.addFrame(0, 0, width, height, frame.pixels, {
+                palette: framePalette,
+                delay: delay
+            });
         });
 
         gifWriter$$1.end();
