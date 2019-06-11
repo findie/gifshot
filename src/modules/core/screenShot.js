@@ -9,7 +9,7 @@
 
 // Dependencies
 import utils from './utils';
-import AnimatedGIF from './AnimatedGIF';
+import GIFter from './GIFter/GIFter';
 
 // Helpers
 const noop = () => {};
@@ -55,7 +55,20 @@ const screenShot = {
         let renderingContextsToSave = [];
         let numFrames = savedRenderingContexts.length ? savedRenderingContexts.length : options.numFrames;
         let pendingFrames = numFrames;
-        let ag = new AnimatedGIF(options);
+
+        console.log('new gifter');
+
+        let ag = new GIFter({
+            sampleInt: options.sampleInterval,
+            sampleQty: numFrames,
+            loop: 0,
+            frameDelay: options.frameDuration,
+//				loopDelay: 30,
+            diffMode: 1,
+            quantOpts: {
+                method: 1,
+            }
+        });
         let fontSize = utils.getFontSize(options);
         let textXCoordinate = options.textXCoordinate ? options.textXCoordinate : textAlign === 'left' ? 1 : textAlign === 'right' ? gifWidth : gifWidth / 2;
         let textYCoordinate = options.textYCoordinate ? options.textYCoordinate : textBaseline === 'top' ? 1 : textBaseline === 'center' ? gifHeight / 2 : gifHeight;
@@ -64,6 +77,9 @@ const screenShot = {
         let sourceWidth = crop ? videoWidth - crop.scaledWidth : 0;
         let sourceY = crop ? Math.floor(crop.scaledHeight / 2) : 0;
         let sourceHeight = crop ? videoHeight - crop.scaledHeight : 0;
+        let lastCurrentTime = 0;
+
+
         const captureFrames = function captureSingleFrame () {
             const framesLeft = pendingFrames - 1;
 
@@ -129,9 +145,12 @@ const screenShot = {
                   context.fillText(text, textXCoordinate, textYCoordinate);
               }
 
-              imageData = context.getImageData(0, 0, gifWidth, gifHeight);
+              console.log('Get Image Data');
+              createImageBitmap(context.getImageData(0, 0, gifWidth, gifHeight)).then((img) =>{
+                  ag.addFrame(img);
+              });
 
-              ag.addFrameImageData(imageData);
+              // ag.addFrame(imageData);
 
               pendingFrames = framesLeft;
 
@@ -139,23 +158,31 @@ const screenShot = {
               progressCallback((numFrames - pendingFrames) / numFrames);
 
               if (framesLeft > 0) {
-                // test
-                  utils.requestTimeout(captureSingleFrame, waitBetweenFrames);
+                  console.log('Video CurrentTime', videoElement.currentTime);
+                  console.log('Capture Single Frame. Interval:', interval);
+                  console.log('FramesLeft', framesLeft);
+
+                  videoElement.currentTime = lastCurrentTime + interval;
+                  lastCurrentTime = lastCurrentTime + interval;
+                  // utils.requestTimeout(captureSingleFrame, 50); // 50ms enough to seek.
               }
 
-              if (!pendingFrames) {
-                  ag.getBase64GIF((image) => {
-                      callback({
-                        'error': false,
-                        'errorCode': '',
-                        'errorMsg': '',
-                        'image': image,
-                        'cameraStream': cameraStream,
-                        'videoElement': videoElement,
-                        'webcamVideoElement': webcamVideoElement,
-                        'savedRenderingContexts': renderingContextsToSave,
-                        'keepCameraOn': keepCameraOn
-                      });
+              if (pendingFrames === 0) {
+                  console.log('Doing getBase64GIF');
+                  videoElement.pause();
+
+                  console.log('Render GIFter');
+                  const image = ag.render();
+                  callback({
+                      'error': false,
+                      'errorCode': '',
+                      'errorMsg': '',
+                      'image': image,
+                      'cameraStream': cameraStream,
+                      'videoElement': videoElement,
+                      'webcamVideoElement': webcamVideoElement,
+                      'savedRenderingContexts': renderingContextsToSave,
+                      'keepCameraOn': keepCameraOn
                   });
               }
           }
@@ -167,16 +194,19 @@ const screenShot = {
       canvas.width = gifWidth;
       canvas.height = gifHeight;
       context = canvas.getContext('2d');
-
-      (function capture() {
-          if (!savedRenderingContexts.length && videoElement.currentTime === 0) {
-              utils.requestTimeout(capture, 100);
-
-              return;
-          }
-
+      videoElement.onseeked = () => {
+          console.log('video seeked', videoElement.currentTime);
           captureFrames();
-      }());
+      };
+
+      let firstTime = true;
+      videoElement.onloadeddata = () => {
+          console.log('Video Can Play');
+          if (firstTime) {
+              captureFrames();
+              firstTime = false;
+          }
+      };
     },
     getCropDimensions: (obj = {}) => {
         const width = obj.videoWidth;

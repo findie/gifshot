@@ -30,7 +30,7 @@
             gifWidth: Number(gifWidth.value),
             gifHeight: Number(gifHeight.value),
             images: gifSource.value === 'images' ? ['http://i.imgur.com/2OO33vX.png', 'http://i.imgur.com/qOwVaSN.png', 'http://i.imgur.com/Vo5mFZJ.gif'] : false,
-            video: gifSource.value === 'video' ? ['example.mp4', 'example.ogv'] : false,
+            video: gifSource.value === 'video' ? ['example.mp4'] : false,
             filter: filter.value,
             interval: Number(interval.value),
             numFrames: Number(numFrames.value),
@@ -117,19 +117,26 @@
                     var image = obj.image;
                     var animatedImage = document.createElement('img');
 
-                    animatedImage.src = image;
+                    const imageData = fetch(obj.image)
+                        .then(res => res.blob())
+                        .then((data) => {
+                            const imageURL = URL.createObjectURL(data);
 
-                    progressBar.classList.add('hidden');
-                    progressBar.value = 0;
+                            animatedImage.src = imageURL;
 
-                    placeholderDiv.classList.add('hidden');
-                    gifshotImagePreview.innerHTML = '';
-                    gifshotImagePreview.appendChild(animatedImage);
+                            progressBar.classList.add('hidden');
+                            progressBar.value = 0;
 
-                    if (downloadAttrSupported) {
-                        saveGIFButton.setAttribute('href', image);
-                        saveGIFButton.classList.remove('hidden');
-                    }
+                            placeholderDiv.classList.add('hidden');
+                            gifshotImagePreview.innerHTML = '';
+                            gifshotImagePreview.appendChild(animatedImage);
+
+                            if (downloadAttrSupported) {
+                                saveGIFButton.setAttribute('href', imageURL);
+                                saveGIFButton.classList.remove('hidden');
+                            }
+                        });
+
                 } else {
                     console.log('obj.error', obj.error);
                     console.log('obj.errorCode', obj.errorCode);
